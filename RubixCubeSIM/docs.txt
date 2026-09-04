@@ -1,0 +1,113 @@
+resources used to build this project :
+
+https://youtu.be/24eHm4ri8WM?si=58nQhz6XzN4BwUfj
+
+R L U D F B 
+right left up down front back
+
+https://youtu.be/7BGcor5vE-w?si=chyP2TzRqS8sIds3
+matrix rotation 
+
+i have two possibilities right now 
+either i can make a 3d matrix and transform it totally independently each slide from all 
+3 orientations x , y ,z while slicing it as perpendicular to the current perspective , then rotating the slice one by
+one depending on the transformation input
+
+or 
+
+i can take a 3d matrix as a tensor and then apply 3d matrix transformation using matrix multiplication
+that dosent affect the values but rotates it in any given orientation 
+for 2d i know its possible to do so but i dont know if the same logic has been discovered
+in the mathematics or not , it probably is 
+
+
+      b b b 
+      b b b
+      b b b
+o o o w w w r r r y y y
+o o o w w w r r r y y y
+o o o w w w r r r y y y
+      g g g
+      g g g
+      g g g
+      char blue[9] = {'b','b','b','b','b','b','b','b','b'};
+      char green[9] = {'g','g','g','g','g','g','g','g','g'};
+      char red[9] = {'r','r','r','r','r','r','r','r','r'};
+      char yellow[9] = {'y','y','y','y','y','y','y','y','y'};
+      char white[9] = {'w','w','w','w','w','w','w','w','w'};
+      char orange[9] = {'o','o','o','o','o','o','o','o','o'};
+
+        red  orange
+          |   |
+w 0  -> b r g o | y
+b 1  -> y r w o | g
+g 2  -> w r y o | b
+-------
+      blue green
+        |   |
+y 3  -> b o g r | w
+o 4  -> b w g y | r
+r 5  -> b y g w | o
+
+
+the engine is done , the method is changed , now we are using numbers instead of colors
+
+1. Deep Q-Network (DQN)
+This is the direct, heavy-duty upgrade to the Q-Table we talked about earlier.
+
+How it works: Instead of a giant table, you feed the 6×9 array of your cube into a Neural Network. The network spits out 18 numbers—one for each possible move—predicting which move gets you closest to the solved state.
+
+Why it's good for the Cube: It is mathematically straightforward to code from scratch. It is discrete (meaning you only have a set number of specific moves, unlike steering a car, which is continuous).
+
+The Catch: A vanilla DQN will struggle to solve a fully scrambled cube unless you give it hints (like giving it a small reward for solving one face, rather than waiting for the whole cube to be solved).
+
+2. PPO (Proximal Policy Optimization)
+This is currently the industry standard for almost everything (it's what OpenAI uses for ChatGPT and their robot hands).
+
+How it works: Instead of just guessing the "value" of a state like DQN, PPO directly learns a "Policy" (a set of rules on how to act). It takes small, safe steps during training to ensure the AI doesn't completely forget what it learned yesterday.
+
+Why it's good for the Cube: It learns incredibly fast and is very stable.
+
+The Catch: PPO is heavily reliant on dense rewards. You would have to write a complex math function in Python that constantly calculates exactly how "close" the cube is to being solved after every single move.
+
+3. The Secret Weapon: DQN + HER (Hindsight Experience Replay)
+If you want an RL agent to actually solve the cube without you holding its hand, you use HER.
+
+How it works: HER is a brilliant hack for the "Sparse Reward" problem. Imagine the AI scrambles the cube, takes 20 random moves, and ends up at random state X. Normally, it gets 0 reward because X is not the solved state. HER steps in and says: "Wait! Let's pretend state X was our goal all along!" It gives the AI a reward for successfully reaching state X.
+
+Why it's good for the Cube: By constantly pretending its random failures were actually intentional successes, the AI learns how to manipulate the cube to reach any specific state. Once it knows how to reach any state, you just ask it to reach the solved state.
+
+4. The World Champion: DeepCubeA (A* Search + Value Network)
+This is the algorithm created by researchers at UC Irvine that actually beat the Rubik's Cube in a fraction of a second.
+
+How it works: It trains a deep neural network to act as an intuition engine. The network learns to look at a scrambled cube and estimate exactly how many moves it will take to solve it. Then, it uses a classic pathfinding algorithm (A* Search) to explore the paths the network thinks are best.
+
+Why it's good for the Cube: It doesn't just solve the cube; it finds the shortest possible path to solve it, often in 20 moves or less.
+
+The Catch: It is incredibly complex to build from scratch and requires serious computing power.
+
+
+
+
+
+we are going with the PPO 
+
+https://youtu.be/MVXdncpCbYE?si=-NQCpNL05cwxlhB6
+proximal policy Optimization
+https://youtu.be/5VHLd9eCZ-w?si=L6q9unRRMXYWjaPk
+
+i think i have got the policy check nn algo already , so we can return a score by seeing how many correct colors are on their original sides of faces i think
+
+If your AI gets +1 point for every correct sticker, it will quickly learn to solve one single face (getting maximum points for that face). But the second it tries to move a piece to solve the rest of the cube, it breaks that first face, its score drops, and the AI panics and reverses the move. It gets stuck in what we call a local optimum.
+
+thus we are proceeding with HER hindsight Experience roleplay
+
+Why HER makes the Reward Function stupidly simple
+With HER, we don't care about "partial credit." We switch to a Sparse Reward.
+
+Is the cube in the exact goal state? Reward = 0 (Success!)
+
+Is the cube literally anything else? Reward = -1 (Keep trying).
+
+Because we are giving it a -1 for every single move, the AI wants to finish the game as fast as possible to stop losing points. The HER algorithm (which we will build into the memory buffer later) will handle the magic of pretending failed states were actually goals.
+
